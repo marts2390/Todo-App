@@ -4,6 +4,7 @@ export const typeDefs = gql`
   type Todo {
     id: ID!
     title: String!
+    content: String!
     completed: Boolean!
   }
 
@@ -12,7 +13,8 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    addTodo(title: String!): Todo
+    addTodo(title: String!, content: String!): Todo
     toggleTodoCompleted(id: ID!): Todo
+    deleteTodo(id: ID!): Boolean
   }
 `;

@@ -1,31 +1,47 @@
+import { Todo } from "@/types/Todo";
 import { mockTodos } from "../data/todos";
-import { AddTodoSchema, ToggleTodoCompletedSchema } from "./validation";
-
-type Todo = {
-  id: string;
-  title: string;
-  completed: boolean;
-};
+import { AddTodoSchema, IdSchema } from "./validation";
+import { GraphQLError } from "graphql";
+import { v4 as uuidv4 } from "uuid";
+import { ZodIssue } from "zod";
 
 const todos: Todo[] = mockTodos;
+
+const formatErrors = (errArray?: ZodIssue[], customErr?: string): void => {
+  const errors = errArray?.map((issue) => ({
+    field: issue.path[0],
+    message: issue.message,
+    code: issue.code
+  }));
+
+  throw new GraphQLError("Validation Error", {
+    extensions: {
+      code: "BAD_USER_INPUT",
+      validationErrors: errors || [{ message: customErr }]
+    }
+  });
+};
 
 export const resolvers = {
   Query: {
     todos: () => todos
   },
   Mutation: {
-    addTodo: (_: unknown, args: { title: string }) => {
+    addTodo: (_: unknown, args: { title: string; content: string }) => {
       const validationResult = AddTodoSchema.safeParse(args);
 
       if (!validationResult.success) {
-        throw new Error(`Validation Error: ${validationResult.error.message}`);
+        formatErrors(validationResult.error.issues);
+
+        return;
       }
 
-      const { title } = validationResult.data;
+      const { title, content } = validationResult.data;
 
       const newTodo: Todo = {
-        id: `${todos.length + 1}`,
+        id: uuidv4(),
         title,
+        content,
         completed: false
       };
 
@@ -33,11 +49,32 @@ export const resolvers = {
 
       return newTodo;
     },
-    toggleTodoCompleted: (_: unknown, args: { id: string }) => {
-      const validationResult = ToggleTodoCompletedSchema.safeParse(args);
+    deleteTodo: (_: unknown, args: { id: string }) => {
+      const validationResult = IdSchema.safeParse(args);
 
       if (!validationResult.success) {
-        throw new Error(`Validation Error: ${validationResult.error.message}`);
+        formatErrors(validationResult.error.issues);
+
+        return;
+      }
+
+      const { id } = args;
+
+      const todoIndex = todos.findIndex((item) => item.id === id);
+
+      if (todoIndex === -1) {
+        formatErrors(undefined, `No todo found with id: ${id}`);
+      }
+
+      todos.splice(todoIndex, 1);
+
+      return true;
+    },
+    toggleTodoCompleted: (_: unknown, args: { id: string }) => {
+      const validationResult = IdSchema.safeParse(args);
+
+      if (!validationResult.success) {
+        throw new Error(validationResult.error.message);
       }
 
       const { id } = validationResult.data;

@@ -11,11 +11,18 @@ export const GET_TODOS = gql`
 `;
 
 export const ADD_TODO = gql`
-  mutation AddTodo($title: String!) {
-    addTodo(title: $title) {
+  mutation AddTodo($title: String!, $content: String!) {
+    addTodo(title: $title, content: $content) {
       id
       title
+      content
       completed
     }
+  }
+`;
+
+export const DELETE_TODO = gql`
+  mutation DeleteTodo($id: ID!) {
+    deleteTodo(id: $id)
   }
 `;
