@@ -8,7 +8,7 @@ import { GET_TODOS } from "@/queries/todo";
 import { EdgeInsets, useSafeAreaInsets } from "react-native-safe-area-context";
 // Components
 import { Text, useTheme, MD3Theme, IconButton } from "react-native-paper";
-import { TodoItem } from "@/components/TodoItem";
+import { TodoCard } from "@/components/TodoCard";
 // Expo
 import { router } from "expo-router";
 // Animated
@@ -19,6 +19,8 @@ const App = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const styles = useStyles(theme, insets);
+
+  console.log(data?.todos);
 
   if (loading) {
     return <Text>Loading...</Text>;
@@ -42,16 +44,7 @@ const App = (): React.ReactElement => {
           />
         </View>
       )}
-      renderItem={({ item }) => (
-        <TodoItem
-          todo={{
-            title: item.title,
-            id: item.id,
-            completed: item.completed,
-            content: ""
-          }}
-        />
-      )}
+      renderItem={({ item }) => <TodoCard data={item} />}
     />
   );
 };
@@ -66,9 +59,6 @@ const useStyles = (theme: MD3Theme, insets: EdgeInsets) =>
     container: {
       paddingTop: insets.top,
       paddingHorizontal: 20
-    },
-    content: {
-      padding: 16
     },
     header: {
       flexDirection: "row",

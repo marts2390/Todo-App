@@ -4,6 +4,8 @@ import { AddTodoSchema, IdSchema } from "./validation";
 import { GraphQLError } from "graphql";
 import { v4 as uuidv4 } from "uuid";
 import { ZodIssue } from "zod";
+import dayjs from "dayjs";
+import { TodoStack } from "@/types/TodoStack";
 
 const todos: Todo[] = mockTodos;
 
@@ -24,7 +26,26 @@ const formatErrors = (errArray?: ZodIssue[], customErr?: string): void => {
 
 export const resolvers = {
   Query: {
-    todos: () => todos
+    todos: () => {
+      const formatToDate = todos
+        .reduce((acc: TodoStack[], todo) => {
+          const date = dayjs(todo.date);
+          const groupExists = acc.find((group) =>
+            dayjs(group.date).isSame(date, "day")
+          );
+
+          if (groupExists) {
+            groupExists.items.push(todo);
+          } else {
+            acc.push({ date: date.toISOString(), items: [todo] });
+          }
+
+          return acc;
+        }, [])
+        .sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix());
+
+      return formatToDate;
+    }
   },
   Mutation: {
     addTodo: (_: unknown, args: { title: string; content: string }) => {
@@ -40,6 +61,7 @@ export const resolvers = {
 
       const newTodo: Todo = {
         id: uuidv4(),
+        date: dayjs().toISOString(),
         title,
         content,
         completed: false

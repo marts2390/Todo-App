@@ -19,9 +19,9 @@ export type Scalars = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  addTodo?: Maybe<Todo>;
+  addTodo?: Maybe<TodoItem>;
   deleteTodo?: Maybe<Scalars['Boolean']['output']>;
-  toggleTodoCompleted?: Maybe<Todo>;
+  toggleTodoCompleted?: Maybe<TodoItem>;
 };
 
 
@@ -42,21 +42,28 @@ export type MutationToggleTodoCompletedArgs = {
 
 export type Query = {
   __typename?: 'Query';
-  todos: Array<Todo>;
+  todos: Array<Maybe<Todos>>;
 };
 
-export type Todo = {
-  __typename?: 'Todo';
+export type TodoItem = {
+  __typename?: 'TodoItem';
   completed: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
+  date: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   title: Scalars['String']['output'];
+};
+
+export type Todos = {
+  __typename?: 'Todos';
+  date: Scalars['String']['output'];
+  items: Array<TodoItem>;
 };
 
 export type GetTodosQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetTodosQuery = { __typename?: 'Query', todos: Array<{ __typename?: 'Todo', id: string, title: string, completed: boolean }> };
+export type GetTodosQuery = { __typename?: 'Query', todos: Array<{ __typename?: 'Todos', date: string, items: Array<{ __typename?: 'TodoItem', id: string, title: string, content: string, completed: boolean }> } | null> };
 
 export type AddTodoMutationVariables = Exact<{
   title: Scalars['String']['input'];
@@ -64,7 +71,7 @@ export type AddTodoMutationVariables = Exact<{
 }>;
 
 
-export type AddTodoMutation = { __typename?: 'Mutation', addTodo?: { __typename?: 'Todo', id: string, title: string, content: string, completed: boolean } | null };
+export type AddTodoMutation = { __typename?: 'Mutation', addTodo?: { __typename?: 'TodoItem', id: string, title: string, content: string, completed: boolean } | null };
 
 export type DeleteTodoMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -77,9 +84,13 @@ export type DeleteTodoMutation = { __typename?: 'Mutation', deleteTodo?: boolean
 export const GetTodosDocument = gql`
     query GetTodos {
   todos {
-    id
-    title
-    completed
+    date
+    items {
+      id
+      title
+      content
+      completed
+    }
   }
 }
     `;

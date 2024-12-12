@@ -3,9 +3,13 @@ import { gql } from "graphql-tag";
 export const GET_TODOS = gql`
   query GetTodos {
     todos {
-      id
-      title
-      completed
+      date
+      items {
+        id
+        title
+        content
+        completed
+      }
     }
   }
 `;

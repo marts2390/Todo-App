@@ -1,5 +1,5 @@
 // Native
-import { Alert, StyleSheet } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 // Graphql
 import { ApolloError, useMutation } from "@apollo/client";
 import {
@@ -8,11 +8,9 @@ import {
 } from "@/generated/graphql";
 import { DELETE_TODO, GET_TODOS } from "@/queries/todo";
 // Components
-import { Card, Text, IconButton, useTheme, MD3Theme } from "react-native-paper";
+import { Text, IconButton, useTheme } from "react-native-paper";
 // Animations
 import Animated, {
-  FadeIn,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withTiming
@@ -24,18 +22,15 @@ import { Todo } from "@/types/Todo";
 // Utils
 import { validateErrors } from "@/utils/validate-errors";
 
-const AnimatedCard = Animated.createAnimatedComponent(Card);
-
 interface TodoItemProps {
-  todo: Todo;
+  todo: Omit<Todo, "date">;
 }
 
 export const TodoItem = ({ todo }: TodoItemProps): React.ReactElement => {
   const theme = useTheme();
-  const styles = useStyles(theme);
 
   const buttonOne = useSharedValue(0);
-  const buttonTwo = useSharedValue(0);
+  const contentMargin = useSharedValue(0);
 
   const [deleteTodo] = useMutation<
     DeleteTodoMutation,
@@ -62,103 +57,96 @@ export const TodoItem = ({ todo }: TodoItemProps): React.ReactElement => {
     ]
   }));
 
-  const buttonTwoStyle = useAnimatedStyle(() => ({
+  const contentStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateX: withTiming(buttonTwo.value)
+        translateX: withTiming(contentMargin.value)
       }
     ]
   }));
 
   const pan = Gesture.Pan()
+    .requireExternalGestureToFail(Gesture.Native())
     .onUpdate((event) => {
       if (event.translationX < 0) {
         if (event.translationX > -100) {
           buttonOne.value = event.translationX;
         }
-
-        if (event.translationX > -50) {
-          buttonTwo.value = event.translationX;
-        }
       }
 
       if (event.translationX > 0) {
         buttonOne.value = withTiming(0);
-        buttonTwo.value = withTiming(0);
       }
     })
     .onEnd((event) => {
       if (event.translationX < 0) {
         buttonOne.value = withTiming(-100);
-        buttonTwo.value = withTiming(-50);
+        contentMargin.value = withTiming(-100);
       } else {
         buttonOne.value = withTiming(0);
-        buttonTwo.value = withTiming(0);
+        contentMargin.value = withTiming(0);
       }
     });
 
   return (
-    <AnimatedCard
-      mode="contained"
-      style={styles.card}
-      entering={FadeIn}
-      exiting={FadeOut}
-    >
+    <>
       <GestureDetector gesture={pan}>
-        <Text style={styles.content} variant="titleMedium">
-          {todo.title}
-        </Text>
+        <Animated.View style={[contentStyle, styles.content]}>
+          <Text style={styles.title} variant="titleMedium">
+            {todo.title}
+          </Text>
+          <Text numberOfLines={1} variant="bodySmall">
+            {todo.content}
+          </Text>
+        </Animated.View>
       </GestureDetector>
-      <Animated.View
-        style={[
-          buttonOneStyle,
-          styles.menu,
-          { backgroundColor: theme.colors.secondary }
-        ]}
-      >
-        <IconButton
-          icon="pencil-circle-outline"
-          iconColor={theme.colors.surface}
-        />
+      <Animated.View style={[buttonOneStyle, styles.menu]}>
+        <View
+          style={{
+            ...styles.menuItem,
+            backgroundColor: theme.colors.secondary
+          }}
+        >
+          <IconButton
+            icon="pencil-circle-outline"
+            iconColor={theme.colors.surface}
+          />
+        </View>
+        <View
+          style={{ ...styles.menuItem, backgroundColor: theme.colors.error }}
+        >
+          <IconButton
+            icon="delete-circle-outline"
+            iconColor={theme.colors.surface}
+            onPress={() => handleDelete(todo.id)}
+          />
+        </View>
       </Animated.View>
-      <Animated.View
-        style={[
-          buttonTwoStyle,
-          styles.menu,
-          { backgroundColor: theme.colors.error }
-        ]}
-      >
-        <IconButton
-          icon="delete-circle-outline"
-          iconColor={theme.colors.surface}
-          onPress={() => handleDelete(todo.id)}
-        />
-      </Animated.View>
-    </AnimatedCard>
+    </>
   );
 };
 
-const useStyles = (theme: MD3Theme) =>
-  StyleSheet.create({
-    menu: {
-      position: "absolute",
-      top: 0,
-      right: -50,
-      bottom: 0,
-      width: 50,
-      zIndex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      paddingHorizontal: 20
-    },
-    content: {
-      padding: 16
-    },
-    card: {
-      marginBottom: 12,
-      backgroundColor: theme.colors.surface,
-      borderColor: theme.colors.elevation.level5,
-      borderWidth: 1,
-      overflow: "hidden"
-    }
-  });
+const styles = StyleSheet.create({
+  menu: {
+    position: "absolute",
+    top: 0,
+    right: -100,
+    bottom: 0,
+    zIndex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row"
+  },
+  menuItem: {
+    width: 50,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  title: {
+    marginBottom: 4
+  },
+  content: {
+    padding: 12
+  }
+});
